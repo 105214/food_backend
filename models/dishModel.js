@@ -23,6 +23,11 @@ const dishSchema = new mongoose.Schema(
       ref: "Restaurant", 
       required: true  // Ensure every dish belongs to a restaurant
     },
+    ownerId:{
+      type:mongoose.Schema.Types.ObjectId,
+      ref:"Owner",
+      required:true,
+    },
     category: {
       type: String,
       enum: ["Rice", "Veg", "Non-veg", "Drinks","meat","fish"] // Restrict category to predefined options

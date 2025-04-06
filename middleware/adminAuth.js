@@ -15,7 +15,7 @@ const adminAuth = (req, res, next) => {
     if (err) {
       return res.status(401).json({ message: "Invalid or expired token" });
     }
-    req.user = decoded; // Attach user to request
+    req.admin = decoded; // Change req.user to req.admin
     next();
   });
 };
@@ -23,6 +23,49 @@ const adminAuth = (req, res, next) => {
 module.exports = adminAuth;
 
 
+
+
+
+
+
+
+
+
+
+
+
+// const jwt = require('jsonwebtoken');
+
+// const adminAuth = (req, res, next) => {
+//     console.log("admin authentication",req.headers.authorization)
+//     try {
+//         let token = req.cookies.token;  // First, check cookies
+//         console.log("backend toke",token)
+//         // If not found in cookies, check Authorization header
+//         if (!token && req.headers.authorization) {
+//             token = req.headers.authorization.split(" ")[1]; // "Bearer <token>"
+//         }
+
+      
+
+//         if (!token) {
+//             return res.status(401).json({ message: "admin not authorized", success: false });
+//         }
+
+//         const tokenVerified = jwt.verify(token, process.env.JWT_SECRET_KEY);
+
+//         if (!tokenVerified) {
+//             return res.status(401).json({ message: "admin not authorized", success: false });
+//         }
+
+//         req.admin = tokenVerified;
+//         next();
+//     } catch (error) {
+//         return res.status(401).json({ message: error.message || "User authorization failed", success: false });
+//     }
+// };
+
+// module.exports = adminAuth;
 
 
 

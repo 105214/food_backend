@@ -1,9 +1,16 @@
 const express=require('express')
 const adminAuth=require("../middleware/adminAuth.js")
-const { addRestaurant, addMenuItem, getAllOrders, updateOrderStatus, getAllUsers, deleteRestaurant, deleteMenuItem, createAdmin, adminLogin, adminLogout, adminProfile, adminUpdate, deleteAdminProfile } = require('../controllers/adminController')
+const {  getAllOrders, updateOrderStatus, getAllUsers,  createAdmin, adminLogin, adminLogout, adminProfile, adminUpdate, deleteAdminProfile, deleteUser, adminDish } = require('../controllers/adminController.js')
 const { upload } = require("../middleware/multer.js")
 const { processUpload } = require('../config/cloudinary.js');
 const router=express.Router()
+
+
+
+
+
+
+
 
 // create admin profile
 router.post('/addadmin',upload.single("profilePic"),createAdmin)
@@ -25,16 +32,20 @@ router.delete("/deleteadmin",adminAuth,deleteAdminProfile)
 
 // getallorders
 router.get("/allorders",adminAuth,getAllOrders)
+
+//admin dish
+router.get("/order/:id", adminAuth,adminDish)
 // updateorder status
-router.get("/orderstatus",adminAuth,updateOrderStatus)
+router.post("/orderstatus",adminAuth,updateOrderStatus)
 // get all users
 router.get("/allusers",adminAuth,getAllUsers)
 // delete restaurant
-router.delete("/deleterestaurant",adminAuth,deleteRestaurant)
+// router.delete("/deleterestaurant",adminAuth,deleteRestaurant)
 // delete menuitem
-router.delete("/menuitemdelete",adminAuth,deleteMenuItem)
+// router.delete("/menuitemdelete",adminAuth,deleteMenuItem)
 
-
+//delete user
+router.delete("/deleteuser/:id",adminAuth,deleteUser)
 
 
 module.exports=router

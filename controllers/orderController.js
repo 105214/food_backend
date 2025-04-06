@@ -6,10 +6,9 @@ const {generateToken} = require("../utils/token.js")
 
 
 
-
 const placeOrder = async (req, res) => {
   try {
-    const userId  = req.user.id;
+    const userId = req.user.id;
     const { paymentMethod, deliveryAddress } = req.body;
 
     if (!userId) {
@@ -20,14 +19,21 @@ const placeOrder = async (req, res) => {
       return res.status(400).json({ message: "Payment method and delivery address are required" });
     }
 
-    const cart = await Cart.findOne({ userId }).populate('items.dishItem');
+    const cart = await Cart.findOne({ userId }).populate('items.dishId');
     if (!cart || cart.items.length === 0) {
       return res.status(400).json({ message: "Your cart is empty" });
     }
 
+    // Transform cart items to order items format
+    const orderItems = cart.items.map(item => ({
+      dishItem: item.dishId._id,
+      quantity: item.quantity,
+      price: item.dishId.price
+    }));
+
     const newOrder = await Order.create({
       user: userId,
-      
+      items: orderItems,
       totalAmount: cart.totalPrice,
       paymentMethod,
       paymentStatus: paymentMethod === 'Cash on Delivery' ? 'Pending' : 'Completed',
@@ -35,12 +41,52 @@ const placeOrder = async (req, res) => {
       status: "Pending",
     });
 
+    // Clear the cart after placing order
+    await Cart.findOneAndUpdate(
+      { userId },
+      { $set: { items: [], totalPrice: 0 } }
+    );
+
     res.status(200).json({ message: "Order placed successfully", order: newOrder });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error", error });
   }
 };
+// const placeOrder = async (req, res) => {
+//   try {
+//     const userId  = req.user.id;
+//     const { paymentMethod, deliveryAddress } = req.body;
+
+//     if (!userId) {
+//       return res.status(401).json({ message: "Unauthorized: User not logged in" });
+//     }
+
+//     if (!paymentMethod || !deliveryAddress) {
+//       return res.status(400).json({ message: "Payment method and delivery address are required" });
+//     }
+
+//     const cart = await Cart.findOne({ userId }).populate('items.dishItem');
+//     if (!cart || cart.items.length === 0) {
+//       return res.status(400).json({ message: "Your cart is empty" });
+//     }
+
+//     const newOrder = await Order.create({
+//       user: userId,
+      
+//       totalAmount: cart.totalPrice,
+//       paymentMethod,
+//       paymentStatus: paymentMethod === 'Cash on Delivery' ? 'Pending' : 'Completed',
+//       deliveryAddress,
+//       status: "Pending",
+//     });
+
+//     res.status(200).json({ message: "Order placed successfully", order: newOrder });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Server error", error });
+//   }
+// };
 
 
 
@@ -109,23 +155,21 @@ const updateOrderStatus = async (req, res) => {
 
 const deleteOrder = async (req, res) => {
   try {
-    const { orderId } = req.body
-    const deleteOrder = await Order.findByIdAndDelete(orderId)
-    // const order = await Order.findById(orderId)
+    // Get orderId from URL parameter instead of body
+    const { orderId } = req.params;
+    
+    const deleteOrder = await Order.findByIdAndDelete(orderId);
 
     if (!deleteOrder) {
-      return res.status(404).json({ message: "Order not found" })
+      return res.status(404).json({ message: "Order not found" });
     }
 
-    // await order.remove()
-
-    res.status(200).json({ message: "Order deleted successfully" })
+    res.status(200).json({ message: "Order deleted successfully" });
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: "Server error", error })
+    console.error(error);
+    res.status(500).json({ message: "Server error", error });
   }
 };
-
 module.exports = {
   placeOrder,
   getOrders,

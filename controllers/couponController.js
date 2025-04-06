@@ -2,6 +2,7 @@ const Coupon = require("../models/couponModel.js");
 const Cart = require("../models/cartModel.js");
 const User = require("../models/userModel.js")
 const Admin = require("../models/adminModel.js")
+const Order=require("../models/orderModel.js")
 const bcrypt = require("bcrypt")
 const {generateToken} = require("../utils/token.js")
 
@@ -78,54 +79,77 @@ const createCoupon = async (req, res) => {
 
 const applyCoupon = async (req, res) => {
   try {
-    const { couponCode } = req.body;
+    console.log("[DEBUG] Received data:", req.body);
+    
+    const { couponCode, orderId } = req.body;
     const userId = req.user.id;
-console.log("coode",req.body)
-    // Validate couponCode input
+    
     if (!couponCode) {
       return res.status(400).json({ message: "Coupon code is required" });
     }
-
-    // Find active coupon
+    
+    if (!orderId) {
+      return res.status(400).json({ message: "Order ID is required" });
+    }
+    
     const coupon = await Coupon.findOne({ code: couponCode, isActive: true });
     if (!coupon) {
       return res.status(400).json({ message: "Invalid or expired coupon code" });
     }
- 
-    if (!(coupon.expiryDate instanceof Date)) {
-      coupon.expiryDate = new Date(coupon.validTill);
+    
+    const order = await Order.findOne({ _id: orderId, user: userId });
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
     }
-    // Check if coupon is expired
-    if (coupon.expiryDate.getTime() < Date.now()) {
-      return res.status(400).json({ message: "Coupon has expired" });
-    }
+    
+    // Ensure totalAmount is valid
+    const currentTotal = parseFloat(order.totalAmount || 0);
+    const discountValue = parseFloat(coupon.discount || 0);
 
-    // Find the user's cart
-    let cart = await Cart.findOne({ userId });
-    if (!cart) {
-      return res.status(404).json({ message: "Cart not found" });
-    }
-
-    // Ensure cart has a valid totalPrice
-    if (!cart.totalPrice || cart.totalPrice <= 0) {
-      return res.status(400).json({ message: "Cannot apply coupon to an empty or invalid cart" });
+    if (isNaN(currentTotal) || isNaN(discountValue)) {
+      return res.status(400).json({ message: "Invalid order total or discount value" });
     }
 
-    // Calculate discount and update cart
-    const discountAmount = (cart.totalPrice * coupon.discount) / 100;
-    cart.totalPrice = Math.max(0, cart.totalPrice - discountAmount); // Prevent negative total
-    await cart.save();
+    let discountAmount = 0;
+    if (coupon.discountType === 'percentage') {
+      discountAmount = (currentTotal * discountValue) / 100;
+    } else {
+      discountAmount = discountValue;
+    }
 
-    res.status(200).json({
-      message: "Coupon applied successfully",
-      discountAmount,
-      newTotalPrice: cart.totalPrice,
+    if (coupon.maxDiscount && discountAmount > parseFloat(coupon.maxDiscount)) {
+      discountAmount = parseFloat(coupon.maxDiscount);
+    }
+
+    const newTotal = Math.max(currentTotal - discountAmount, 0);
+
+    console.log("[DEBUG] Current Total:", currentTotal);
+    console.log("[DEBUG] Discount Type:", coupon.discountType);
+    console.log("[DEBUG] Discount Value:", discountValue);
+    console.log("[DEBUG] Calculated Discount:", discountAmount);
+    console.log("[DEBUG] New Total:", newTotal);
+
+    if (!isNaN(newTotal)) {
+      order.appliedCoupon = couponCode;
+      order.discountAmount = discountAmount;
+      order.totalAmount = newTotal;
+      await order.save();
+    } else {
+      return res.status(400).json({ message: "Error calculating total amount" });
+    }
+
+    res.status(200).json({ 
+      message: "Coupon applied successfully", 
+      newTotal,
+      discountAmount
     });
+
   } catch (error) {
-    console.error("Error in applyCoupon:", error.stack);
-    res.status(500).json({ message: "Server error" });
+    console.error("[DEBUG] Error:", error.stack);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 
 
@@ -206,6 +230,34 @@ const getCoupons = async (req, res) => {
     });
   }
 };
+const deleteCoupon = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if coupon exists
+    const coupon = await Coupon.findById(id);
+    if (!coupon) {
+      return res.status(404).json({ message: "Coupon not found" });
+    }
+    
+    // Delete the coupon
+    await Coupon.findByIdAndDelete(id);
+    
+    res.status(200).json({
+      message: "Coupon deleted successfully"
+    });
+  } catch (error) {
+    console.error("Error deleting coupon:", error.stack);
+    res.status(500).json({
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
+
+
+
+
 // Admin gets all coupons
 // const getCoupons = async (req, res) => {
 //   try {
@@ -229,5 +281,6 @@ module.exports = {
   getCoupons,
   applyCoupon,
   validateCoupon,
+  deleteCoupon
 };
 

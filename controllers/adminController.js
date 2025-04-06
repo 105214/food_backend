@@ -40,15 +40,6 @@ const createAdmin=async(req,res,next)=>{
       console.log("Received request:", req.body);
 console.log("Received file:", req.file);
 
-
-      // if (req.file) {
-      //   console.log("image daTA",req.file)
-      //     const cloudinaryResponse = await cloudinaryInstance.uploader.upload(req.file.path);
-          
-      //     console.log("Cloudinary Response ===", cloudinaryResponse);
-      //     imageUrl = cloudinaryResponse.secure_url;
-      
-      // }
       const adminData = new Admin({
         name,
         email,
@@ -70,67 +61,89 @@ console.log("Received file:", req.file);
   }
 }
 
-
-const adminLogout=async(req,res,next)=>{
-
-// Check if you're setting the cookie with the same options when logging in
-// In your login handler
-// const token = jwt.sign({ adminId: Admin._id }, process.env.JWT_SECRET_KEY, {
-//   expiresIn: '24h' // or whatever expiration you want
-// });
-  try{
-    // res.cookie('token', token, { 
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === 'production',
-    //   sameSite: 'Strict'
-    // });
-    res.clearCookie('token', { 
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', 
-      sameSite: 'Strict' 
-    });
-    return res.status(200).json({ message: 'admin Logged out successfully' });
-  }catch(error){
-    return res.status(500).json({ message: 'Server error', error });
-  }
-}
-
-
-const adminLogin=async(req,res,next)=>{
+const adminLogout = (req, res) => {
+  console.log("logout hitted")
   try {
-    const { email, password } = req.body
+    console.log("Admin logout request received");
+    res.clearCookie("token");
+    console.log("Cookie cleared");
+    return res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.error("Logout error:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
 
-    const admin = await Admin.findOne({ email })
+
+const adminLogin = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    const admin = await Admin.findOne({ email });
     if (!admin) {
-      return res.status(404).json({ message: "admin not found" })
+      return res.status(404).json({ message: "Admin not found" });
     }
 
-    const isMatch = await bcrypt.compare(password, admin.password)
-        if (!isMatch) {
-          return res.status(401).json({ message: "Invalid credentials" })
-        }
+    const isMatch = await bcrypt.compare(password, admin.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
 
-        const token = generateToken(admin._id)
-    res.cookie("token", token)
-    return res.json({ message: "Login successful",token})
-}catch(error)
-{
-  res.status(500).json({ message: "Server error", error })
-}
-}
+    // Generate token with role
+    const token = generateToken({ id: admin._id, role: "admin" });
+
+    // Set cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+    });
+
+    // Return response
+    return res.status(200).json({
+      message: "Login successful",
+      admin: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+      },
+      token,
+    });
+  } catch (error) {
+    console.error("Admin Login Error:", error.message); // Logs for debugging
+
+    // Handle Mongoose Errors
+    if (error.name === "MongoNetworkError") {
+      return res.status(503).json({ message: "Database connection issue. Try again later." });
+    }
+    
+    if (error.name === "ValidationError") {
+      return res.status(400).json({ message: "Invalid input data." });
+    }
+
+    // Pass error to middleware if available
+    next(error);
+  }
+};
+
+
 
 
 
 const adminProfile = async (req, res, next) => {
   try {
-    console.log("Admin ID from request:", req.id); // Log extracted admin ID
+    console.log("Admin ID from request:", req.admin); // Log extracted admin ID
     
-    if (!req.id) {
-      return res.status(401).json({ message: "Unauthorized: Missing admin ID" });
+    if (!req.admin) {
+      return res.status(401).json({ message: "Unauthorized: Missing admin information" });
     }
 
-    // Fetch admin data using id from the middleware
-    const adminData = await Admin.findById(req.id).select("-password");
+    // Extract the correct ID - notice the nested structure
+    const adminId = req.admin.id.id; // This accesses the actual ID string
+    
+    // Fetch admin data using the string ID
+    const adminData = await Admin.findById(adminId).select("-password");
 
     if (!adminData) {
       return res.status(404).json({ message: "Admin not found" });
@@ -143,26 +156,29 @@ const adminProfile = async (req, res, next) => {
   }
 };
 
-  // try {
-  //   console.log("Received adminId:", req.Id);
-  //   const admin = await Admin.findById(req._id).select('-password'); // Get admin data, excluding password
-  //   console.log("adminID",req.adminId)
-  //   if (!admin) {
-  //     return res.status(404).json({ message: 'Admin not found' });
-  //   }
-  //   res.json({ data: admin, message: 'Admin profile fetched successfully' });
-  // } catch (error) {
-  //   return res.status(500).json({ message: error.message || 'Server error' });
-  // }
+// const adminProfile = async (req, res, next) => {
+//   try {
+//     console.log("Admin ID from request:", req.admin); // Log extracted admin ID
+    
+//     if  (!req.admin || !req.admin.id) {
+//       return res.status(401).json({ message: "Unauthorized: Missing admin ID" });
+//     }
 
-  // try{
-  //   const {_id}=req.body
-  //   const adminData=await Admin.findById(_id)
-  //   delete adminData._doc.password
-  //   return res.json({data:adminData,message:"admin profile fetched"})
-  // }catch(error){
-  //    return res.status(error.statuscode||500).json({message:error.message||"internal server error"})
-  // }
+//     // Fetch admin data using id from the middleware
+//     const adminData = await Admin.findById(req.admin.id).select("-password");
+
+//     if (!adminData) {
+//       return res.status(404).json({ message: "Admin not found" });
+//     }
+
+//     return res.json({ data: adminData, message: "Admin profile fetched" });
+//   } catch (error) {
+//     console.error("Server error:", error);
+//     return res.status(500).json({ message: error.message || "Internal server error" });
+//   }
+// };
+
+  
   
 
 
@@ -221,32 +237,73 @@ const addMenuItem = async (req, res,next) => {
 
 
 
-
-const getAllOrders = async (req, res,next) => {
+const getAllOrders = async (req, res, next) => {
   try {
-    const orders = await Order.find().populate("user", "name email").populate("items.dishItem", "name price");
+    const orders = await Order.find()
+      .populate("user", "name email")
+      .populate("items.dishItem", "name price");
+    
     res.status(200).json({ orders });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error })
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+// const getAllOrders = async (req, res,next) => {
+//     try {
+//     const orderId = req.params.id;
+    
+//     const order = await Order.findById(orderId)
+//       .populate("user", "name email")
+//       .populate("items.dishItem", "name price");
+    
+//     if (!order) {
+//       return res.status(404).json({ message: "Order not found" });
+//     }
+    
+//     res.status(200).json({ order });
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
 
 
-const updateOrderStatus = async (req, res,next) => {
+
+
+
+const updateOrderStatus = async (req, res, next) => {
   try {
-    const { orderId, status } = req.body
-
-    const order = await Order.findByIdAndUpdate(orderId, { status }, { new: true })
-
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" })
+    // Get orderId from request body instead of params since we're using a direct endpoint
+    const { orderId, status } = req.body;
+    
+    if (!orderId || !status) {
+      return res.status(400).json({ message: "Order ID and status are required" });
     }
-
-    res.status(200).json({ message: "Order status updated", order })
+    
+    const order = await Order.findByIdAndUpdate(
+      orderId, 
+      { status }, 
+      { new: true }
+    ).populate("user", "name email").populate("items.dishItem", "name price");
+    
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    
+    res.status(200).json({ message: "Order status updated", order });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error })
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+
+
+
+
+
+
+
+
+
 
 
 const getAllUsers = async (req, res,next) => {
@@ -315,93 +372,7 @@ const adminUpdate = async (req, res) => {
   }
 };
 
-// const adminUpdate = async (req, res) => {
-//   try {
-//     const { name, email, mobile, _id } = req.body;
-//     const admin = await Admin.findById(_id);
 
-//     if (!admin) {
-//       return res.status(404).json({ message: "Admin not found" });
-//     }
-
-//     if (name) admin.name = name;
-//     if (email) admin.email = email;
-//     if (mobile) admin.mobile = mobile;
-
-//     // Check if a new profile picture was uploaded
-//     if (req.file)
-//       try {
-//         // Upload to Cloudinary
-//         const result = await cloudinary.uploader.upload(req.file.path, {
-//           folder: 'admin_profiles',
-//           width: 500,
-//           crop: "scale"
-//         });
-
-
-//     //    {
-//     //   admin.profilePic = req.file.path;
-//     //   console.log("admin profile pic",admin.profilePic) // Save file path
-//     // }
-
-//     if (admin.profilePic) {
-//       const publicId = admin.profilePic.split('/').pop().split('.')[0];
-//       await cloudinary.uploader.destroy(`admin_profiles/${publicId}`);
-//     }
-
-//     admin.profilePic = result.secure_url;
-//   } catch (uploadError) {
-//     console.error('Cloudinary upload error:', uploadError);
-//     return res.status(400).json({ 
-//       message: "Failed to upload image",
-//       error: uploadError.message 
-//     });
-//   }
-
-//     await admin.save();
-
-//     res.status(200).json({
-//       message: "Profile updated successfully",
-//       user: {
-//         id: admin._id,
-//         name: admin.name,
-//         email: admin.email,
-//         profilePic: admin.profilePic,
-//       },
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: "Server error", error: error.message });
-//   }
-// };
-// const adminUpdate=async(req,res,next)=>{
-//   try{
-//     const {name,email,mobile,profilePic,_id}=req.body
-//     const admin=await Admin.findById({_id})
-
-//     if (!admin) {
-//       return res.status(404).json({ message: 'admin not found' });
-//     }
-//     if (name) admin.name = name;
-//     if (email) admin.email = email;
-//     if (mobile)admin.mobile = mobile;
-//     if  (profilePic)admin.profilePic=profilePic
-
-//     await admin.save()
-
-//     res.status(200).json({
-//       message: 'Profile updated successfully',
-//       user: {
-//         id: admin._id,
-//         name: admin.name,
-//         email: admin.email,
-        
-//         phone: admin.phone,
-//       }
-//   })
-//   }catch(error){
-//     res.status(500).json({ message: 'Server error', error });
-//   }
-// }
 
 
 const deleteAdminProfile = async (req, res,next) => {
@@ -420,41 +391,86 @@ const deleteAdminProfile = async (req, res,next) => {
   }
 };
 
-const deleteRestaurant = async (req, res,next) => {
+// const deleteRestaurant = async (req, res,next) => {
+//   try {
+//     const { restaurantId } = req.body
+
+//     const restaurant = await Restaurant.findByIdAndDelete(restaurantId)
+
+//     if (!restaurant) {
+//       return res.status(404).json({ message: "Restaurant not found" })
+//     }
+
+//     res.status(200).json({ message: "Restaurant deleted successfully" })
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error", error })
+//   }
+// }
+
+
+
+
+
+const deleteUser = async (req, res) => {
   try {
-    const { restaurantId } = req.body
+    const { id } = req.params; // Get user ID from URL
+    console.log(id);
+    
+    const userProfile = await User.findByIdAndDelete(id);
 
-    const restaurant = await Restaurant.findByIdAndDelete(restaurantId)
-
-    if (!restaurant) {
-      return res.status(404).json({ message: "Restaurant not found" })
+    if (!userProfile) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({ message: "Restaurant deleted successfully" })
+    res.status(200).json({ message: "User profile deleted successfully" });
+
   } catch (error) {
-    res.status(500).json({ message: "Server error", error })
+    console.error(error);
+    res.status(500).json({ message: "Server error", error });
   }
-}
+};
 
 
 
 
-const deleteMenuItem = async (req, res,next) => {
+
+// const deleteMenuItem = async (req, res,next) => {
+//   try {
+//     const { dishId } = req.body
+
+//     const menuItem = await Dish.findByIdAndDelete(dishId)
+
+//     if (!menuItem) {
+//       return res.status(404).json({ message: "Menu item not found" })
+//     }
+
+//     res.status(200).json({ message: "Menu item deleted successfully" })
+//   } catch (error) {
+//     console.log(error)
+//     res.status(500).json({ message: "Server error", error })
+//   }
+// }
+
+
+
+// Add this route to your backend
+const adminDish=async (req, res) => {
   try {
-    const { dishId } = req.body
-
-    const menuItem = await Dish.findByIdAndDelete(dishId)
-
-    if (!menuItem) {
-      return res.status(404).json({ message: "Menu item not found" })
+    const orderId = req.params.id;
+    
+    const order = await Order.findById(orderId)
+      .populate("user", "name email")
+      .populate("items.dishItem", "name price");
+    
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
     }
-
-    res.status(200).json({ message: "Menu item deleted successfully" })
+    
+    res.status(200).json({ order });
   } catch (error) {
-    console.log(error)
-    res.status(500).json({ message: "Server error", error })
+    res.status(500).json({ message: "Server error", error: error.message });
   }
-}
+};
 module.exports = {
   createAdmin,
   adminLogin,
@@ -467,6 +483,6 @@ module.exports = {
   getAllOrders,
   updateOrderStatus,
   getAllUsers,
-  deleteRestaurant,
-  deleteMenuItem,
+  deleteUser,
+  adminDish,
 }

@@ -51,7 +51,7 @@ const ownerSchema = new mongoose.Schema(
       {
         foodId: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Food",  
+          ref: "Dish",  
         },
         price: {
           type: Number,

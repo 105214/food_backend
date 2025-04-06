@@ -1,7 +1,7 @@
 const express=require('express')
 const userAuth = require('../middleware/userAuth')
 const adminAuth= require('../middleware/adminAuth')
-const { applyCoupon, validateCoupon, createCoupon, getCoupons } = require('../controllers/couponController')
+const { applyCoupon, validateCoupon, createCoupon, getCoupons, deleteCoupon } = require('../controllers/couponController')
 const router=express.Router()
 
 
@@ -17,7 +17,7 @@ router.post("/applycoupon",userAuth,applyCoupon)
 // validate coupon
 router.put("/validatecoupon",userAuth,validateCoupon)
 
- 
+router.delete("/deletecoupon/:id", adminAuth, deleteCoupon);
 
 
 module.exports=router

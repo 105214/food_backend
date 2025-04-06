@@ -1,6 +1,8 @@
 const User = require("../models/userModel.js");
 // const cloudinary=require('../config/cloudinary.js')
+const Restaurant=require("../models/restaurantModel.js")
 const bcrypt = require("bcrypt")
+const mongoose=require('mongoose')
 const {generateToken} = require("../utils/token.js")
 const Order = require("../models/orderModel.js")
 const multer=require("../middleware/multer.js");
@@ -87,11 +89,12 @@ const userLogin = async (req, res, next) => {
       return res.status(401).json({ message: "Invalid credentials" })
     }
 
-    const token = generateToken(user._id)
+    const token = generateToken(user._id,user.role)
     res.cookie("token", token)
 
     return res.json({ message: "Login successful","token":token})
   } catch (error) {
+    console.error("Login Error:", error);
     res.status(500).json({ message: "Server error", error })
   }
 }
@@ -103,41 +106,55 @@ const userLogin = async (req, res, next) => {
 
 
   
-const getProfile = async (req, res) => {
+// const getProfile = async (req, res) => {
+//   try {
+//       const id = req.user.id; // ✅ Extract user ID from token
+//       if (!mongoose.Types.ObjectId.isValid(id)) {  // ✅ Check if id is valid
+//           return res.status(400).json({ message: "Invalid user ID", success: false });
+//       }
+      
+//       const userData = await User.findById(id);
+//       if (!userData) {
+//           return res.status(404).json({ message: "User not found", success: false });
+//       }
+
+//       const { password, ...userWithoutPassword } = userData._doc;
+//       return res.json({ data: userWithoutPassword, message: "Profile fetched successfully" });
+//   } catch (error) {
+//       return res.status(500).json({ message: error.message || "Internal Server Error", success: false });
+//   }
+// };
+
+
+
+const getProfile = async (req, res, next) => {
+  console.log("hitted");
   try {
-      const id = req.user.id; // ✅ Get user ID from token
+    // The problem is that req.user.id is an object, not a string
+    // Extract the ID correctly from the object
+    const id = typeof req.user?.id === 'object' ? req.user?.id?.id : req.user?.id;
+    console.log("User ID extracted:", id, typeof id);
+    
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    
+    const userData = await User.findById(id);
+    if (!userData) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    // Removing password from user data before sending it in the response
+    const { password, ...userWithoutPassword } = userData._doc;
 
-      if (!id) {
-          return res.status(400).json({ message: "User ID missing", success: false });
-      }
-
-      const userData = await User.findById(id);
-      
-      if (!userData) {
-          return res.status(404).json({ message: "User not found", success: false });
-      }
-
-      const { password, ...userWithoutPassword } = userData._doc;
-      
-      return res.json({ data: userWithoutPassword, message: "Profile fetched successfully" });
+    return res.json({ data: userWithoutPassword, message: "User profile fetched" });
   } catch (error) {
-      return res.status(500).json({ message: error.message || "Internal Server Error", success: false });
+    console.error("Error details:", error);
+    return res.status(500).json({ message: error.message || "Internal Server Error" });
   }
 };
 
 
-
-// const getProfile=async(req,res,next)=>{
-//   console.log("hitted")
-//   try{
-//     const id=req.id
-//     const userData=await User.findById(id)
-//     delete userData._doc.password
-//     return res.json({data:userData,message:"user profile fetched"})
-//   }catch(error){
-//      return res.status(error.statuscode||500).json({message:error.message||"internal server error"})
-//   }
-//   }
 
 
 const updateProfile = async (req, res) => {
@@ -277,6 +294,103 @@ const deleteUserProfile = async (req, res) => {
 };
 
 
+const getuserRestaurantById = async (req, res) => {
+  try {
+    const restaurantId = req.params.id;
+    
+    if (!restaurantId) {
+      return res.status(400).json({ message: "Restaurant ID is required" });
+    }
+
+    const restaurant = await Restaurant.findById(restaurantId)
+      .select('-__v'); // Exclude the version field
+    
+    if (!restaurant) {
+      return res.status(404).json({ message: "Restaurant not found" });
+    }
+
+    // Return the restaurant data
+    return res.status(200).json({ 
+      restaurant,
+      message: "Restaurant details fetched successfully" 
+    });
+  } catch (error) {
+    console.error("Error fetching public restaurant details:", error);
+    return res.status(500).json({ 
+      message: "Failed to get restaurant details", 
+      error: error.message 
+    });
+  }
+};
+
+
+
+
+const getDishesByRestaurantId = async (req, res) => {
+  try {
+    const restaurantId = req.params.id;
+    
+    if (!restaurantId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Restaurant ID is required' 
+      });
+    }
+
+    // Convert string ID to ObjectId
+    const dishes = await Dish.find({ 
+      restaurantId: new mongoose.Types.ObjectId(restaurantId) 
+    });
+    
+    console.log("Dishes found:", dishes.length, dishes);
+    
+    return res.status(200).json({
+      success: true,
+      dishes: dishes,
+      count: dishes.length
+    });
+  } catch (error) {
+    console.error('Error fetching dishes:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch dishes',
+      error: error.message
+    });
+  }
+};
+// const getDishesByRestaurantId = async (req, res) => {
+//   try {
+//     const restaurantId = req.params.id;
+    
+//     if (!restaurantId) {
+//       return res.status(400).json({ 
+//         success: false, 
+//         message: 'Restaurant ID is required' 
+//       });
+//     }
+
+//     // Convert string ID to ObjectId
+//     const dishes = await Dish.find({ 
+//       restaurantId: new mongoose.Types.ObjectId(restaurantId) 
+//     });
+    
+//     console.log("Dishes found:", dishes.length);
+    
+//     return res.status(200).json({
+//       success: true,
+//       dishes: dishes,
+//       count: dishes.length
+//     });
+//   } catch (error) {
+//     console.error('Error fetching dishes:', error);
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Failed to fetch dishes',
+//       error: error.message
+//     });
+//   }
+// };
+
 module.exports = {
   userSignup,
   userLogin,
@@ -284,7 +398,8 @@ module.exports = {
   getProfile,
   updateProfile,
   deleteUserProfile,
-  
+  getuserRestaurantById,
+  getDishesByRestaurantId
 }
 
 

@@ -1,6 +1,6 @@
 const express=require('express')
 const userAuth = require('../middleware/userAuth.js');
-const { userSignup, userLogin, getProfile, updateProfile, getOrderHistory,userLogout, getDishById,deleteUserProfile } = require('../controllers/userControllers.js');
+const { userSignup, userLogin, getProfile, updateProfile, getOrderHistory,userLogout, getDishById,deleteUserProfile,getRestaurantById, getDishesByRestaurantId, getuserRestaurantById } = require('../controllers/userControllers.js');
 const { processUpload } = require('../config/cloudinary.js');
 const { upload } = require('../middleware/multer.js');
 const router=express.Router()
@@ -27,6 +27,10 @@ router.put("/profileupdate",upload.single("profilePic"),userAuth,updateProfile)
 // delete
 router.delete("/delete",userAuth,deleteUserProfile)
 
+router.get('/restaurantss/:id', getuserRestaurantById);
+
+
+router.get('/dishes/:id', getDishesByRestaurantId);
 // order history
 // router.get("/orderhistory",userAuth,getOrderHistory)
 

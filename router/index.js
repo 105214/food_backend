@@ -23,5 +23,6 @@ router.use("/restaurant",restaurantRouter)
 router.use("/review",reviewRouter)
 router.use('/payment',paymentRouter)
 router.use('/search',searchRouter)
+router.use('/payment',paymentRouter)
 //  module.exports.apiRouter=router
 module.exports=router

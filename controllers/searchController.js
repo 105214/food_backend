@@ -3,41 +3,37 @@ const SearchItem = require('../models/searchModel');
 const Restaurant = require('../models/restaurantModel');  // If needed for restaurant-based search
 const router = express.Router();
 
-const Search = async (req, res) => {
+const searchItems = async (req, res) => {
   try {
-    const { query, cuisine, category, minPrice, maxPrice } = req.query;
-    // db.searchitems.find({ name: "beef biriyani" }).pretty();
-
-    const searchCriteria = {};
-
-    if (query) {
-      const trimmedQuery = query.trim(); // Trim spaces & newlines
-      searchCriteria.$or = [
-        { name: { $regex: trimmedQuery, $options: 'i' } },
-        { description: { $regex: trimmedQuery, $options: 'i' } }
-      ];
-    }
-
-    console.log("Search Criteria:", JSON.stringify(searchCriteria, null, 2));
-
-    const foodItems = await SearchItem.find(searchCriteria)
-      .populate('restaurant')
-      .exec();
+    const { query } = req.query;
+    
+    const foodItems = await SearchItem.find({
+      $or: [
+        { name: { $regex: query, $options: 'i' } },
+        { description: { $regex: query, $options: 'i' } },
+        { category: { $regex: query, $options: 'i' } }
+      ]
+    });
 
     if (foodItems.length === 0) {
-      return res.status(404).json({ message: "No matching food items found" });
+      return res.status(404).json({ 
+        message: 'No matching food items found',
+        foodItems: [],
+        searchQuery: query
+      });
     }
 
-    res.status(200).json({ foodItems });
-
+    res.json({ 
+      foodItems, 
+      searchQuery: query 
+    });
   } catch (error) {
-    console.error('Error in search:', error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: 'Server error during search' });
   }
 };
 
 
-
+module.exports = {searchItems};
 
 
 
@@ -132,4 +128,4 @@ const Search = async (req, res) => {
 //   }
 // }
 
-module.exports = {Search};
+

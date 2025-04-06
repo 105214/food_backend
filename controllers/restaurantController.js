@@ -1,6 +1,8 @@
+const mongoose = require('mongoose');
 const Restaurant = require("../models/restaurantModel.js")
 const Owner=require("../models/ownerModel.js")
 const Admin=require("../models/adminModel.js")
+const Dish=require("../models/dishModel.js")
 const bcrypt = require("bcrypt")
 const fs =require('fs')
 const {generateToken} = require("../utils/token.js")
@@ -63,25 +65,7 @@ console.log("create restaurant hitted")
  
 
 
-// Controller function
-// const getAllRestaurants = async (req, res, next) => {
-//   try {
-//     // Ensure the admin authentication middleware sets req.admin properly
-    
 
-//     console.log(req.admin, "admin"); // Debug log—prints the admin details.
-
-//     // Retrieve all restaurant records from the database.
-//     const restaurants = await Restaurant.find();
-
-//     // Respond with the list of restaurants.
-//     return res.status(200).json({ restaurants });
-//   } catch (error) {
-//     // Log the error and forward it to the centralized error handler.
-//     console.error("Error fetching restaurants:", error);
-//     next(error); // Pass the error to an error-handling middleware.
-//   }
-// };
 
 
 
@@ -103,12 +87,23 @@ const getAllRestaurants = async (req, res, next) => {
 
 
 
-
-
 const getRestaurantById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const restaurant = await Restaurant.findById(id);
+    const { ownerId } = req.params;
+    console.log("Received ownerId:", ownerId);
+    
+    // Validate if ownerId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(ownerId)) {
+      console.log("Invalid ObjectId format");
+      return res.status(400).json({ message: "Invalid owner ID format" });
+    }
+    
+    const objectIdOwnerId = new mongoose.Types.ObjectId(ownerId);
+    console.log("Converted to ObjectId:", objectIdOwnerId);
+    
+    // Change 'owner' to 'ownerId' to match your schema
+    const restaurant = await Restaurant.findOne({ ownerId: objectIdOwnerId });
+    console.log("Found restaurant:", restaurant);
     
     if (!restaurant) {
       return res.status(404).json({ message: "Restaurant not found" });
@@ -116,10 +111,11 @@ const getRestaurantById = async (req, res) => {
     
     res.status(200).json({ restaurant });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error", error });
+    console.error("Error in getRestaurantById:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 
 
@@ -193,7 +189,23 @@ const updateRestaurant = async (req, res) => {
     });
     
     console.log("Update payload:", updateData);
-    
+    // Add this before the findById operation in your updateRestaurant controller
+console.log(`Attempting to find restaurant with ID: ${id}`);
+const allRestaurants = await Restaurant.find({ ownerId: req.ownerId });
+console.log(`Owner ${req.ownerId} has ${allRestaurants.length} restaurants:`);
+
+console.log("All restaurants in the database:");
+const allRestaurantsInDb = await Restaurant.find({});
+console.log(`Found ${allRestaurantsInDb.length} total restaurants in database`);
+allRestaurantsInDb.forEach(r => console.log(`- ${r._id}: ${r.name} (Owner: ${r.ownerId})`));
+
+// Check if the restaurant exists at all
+const targetRestaurant = await Restaurant.findById(id);
+console.log(`Target restaurant exists: ${!!targetRestaurant}`);
+if (targetRestaurant) {
+  console.log(`Target restaurant owner: ${targetRestaurant.ownerId}, Request owner: ${req.ownerId}`);
+}
+allRestaurants.forEach(r => console.log(`- ${r._id}: ${r.name}`));
     const updatedRestaurant = await Restaurant.findByIdAndUpdate(
       id,
       { $set: updateData },
@@ -222,74 +234,62 @@ const updateRestaurant = async (req, res) => {
 
 
 
+//to show owner restaurants
+const getRestaurantsByOwnerId = async (req, res) => {
+  try {
+    const ownerId = req.params.id;
+    const restaurants = await Restaurant.find({ ownerId: ownerId });
+    console.log(`Found ${restaurants.length} restaurants for owner ${ownerId}`);
+    
+    return res.status(200).json({
+      success: true,
+      count: restaurants.length,
+      data: restaurants
+    });
+  } catch (error) {
+    console.error("Error fetching owner's restaurants:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Server error", 
+      error: error.message 
+    });
+  }
+};
 
-// const updateRestaurant = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const { name, address, description, location, openingHours, mobile, existingImageUrl } = req.body;
 
-//     console.log("Update request received:");
-//     console.log("ID:", id);
-//     console.log("Full request body:", req.body);
+// Add this new controller function to your backend
+const getSingleRestaurant = async (req, res) => {
+  try {
+    const restaurantId = req.params.id;
+    
+    const restaurant = await Restaurant.findById(restaurantId);
+    
+    if (!restaurant) {
+      return res.status(404).json({
+        success: false,
+        message: "Restaurant not found"
+      });
+    }
+    
+    return res.status(200).json({
+      success: true,
+      data: restaurant
+    });
+  } catch (error) {
+    console.error("Error fetching restaurant:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
 
-//     if (!id) {
-//       return res.status(400).json({ message: "Missing restaurant ID" });
-//     }
 
-//     const existingRestaurant = await Restaurant.findById(id);
-//     if (!existingRestaurant) {
-//       return res.status(404).json({ message: "Restaurant not found" });
-//     }
 
-//     // Use existing image if no new file is uploaded
-//     let imageUrl = existingImageUrl || existingRestaurant.imageUrl || "";
-//     if (req.file) {
-//       imageUrl = `http://localhost:3001/uploads/${req.file.filename}`
-     
-//     }
 
-//     // Create update object
-//     const updateData = {
-//       name,
-//       address,
-//       mobile,
-//       description,
-//       location,
-//       openingHours,
-//       imageUrl // Ensure imageUrl is included
-//     };
 
-//     // Preserve fields that shouldn't be lost during update
-//     const preservedFields = ['ownerId', 'AdminId', 'menu', 'rating', 'deliveryFee'];
-//     preservedFields.forEach(field => {
-//       if (existingRestaurant[field]) {
-//         updateData[field] = existingRestaurant[field];
-//       }
-//     });
 
-//     console.log("Update payload:", updateData);
-
-//     const updatedRestaurant = await Restaurant.findByIdAndUpdate(
-//       id,
-//       {$set :updateData,},
-//       { new: true, runValidators: false } // Temporarily disable validators
-//     );
-
-//     if (!updatedRestaurant) {
-//       return res.status(404).json({ message: "Restaurant not found after update attempt" });
-//     }
-
-//     console.log("Updated restaurant:", updatedRestaurant);
-
-//     res.status(200).json({
-//       message: "Restaurant updated successfully",
-//       updatedRestaurant
-//     });
-//   } catch (error) {
-//     console.error("Update error:", error);
-//     res.status(500).json({ message: "Server error", error: error.message });
-//   }
-// };
 
 
 
@@ -317,14 +317,157 @@ const deleteRestaurant = async (req, res, next) => {
 
 
 
+// View restaurant for user
+const viewRestaurantForUser = async (req, res) => {
+  try {
+    const restaurantId = req.params.id;
+    
+    const restaurant = await Restaurant.findById(restaurantId);
+    
+    if (!restaurant) {
+      return res.status(404).json({
+        success: false,
+        message: "Restaurant not found"
+      });
+    }
+    
+    return res.status(200).json({
+      success: true,
+      data: restaurant
+    });
+  } catch (error) {
+    console.error("Error fetching restaurant for user:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
 
 
 
 
+// Get all restaurants for users
+const getAllRestaurantsForUser = async (req, res) => {
+  try {
+    // We can add filters or sorting options based on query parameters
+    const { location, rating, search } = req.query;
+    let query = {};
+    
+    // Add filters if provided
+    if (location) {
+      query.location = location;
+    }
+    
+    if (rating) {
+      query.rating = { $gte: parseInt(rating) };
+    }
+    
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    // Find restaurants with optional filters
+    const restaurants = await Restaurant.find(query);
+    
+    // Return the filtered restaurants
+    return res.status(200).json({
+      success: true,
+      count: restaurants.length,
+      data: restaurants
+    });
+  } catch (error) {
+    console.error("Error fetching restaurants for user:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
 
 
 
+// Make sure this is in your restaurant controller file
+// const restaurantMenu = async (req, res) => {
+//   try {
+//     const { restaurantId } = req.params;
+    
+//     console.log('Fetching menu for restaurant ID:', restaurantId);
+    
+//     // Find the restaurant and its menu items
+//     const restaurant = await Restaurant.findById(restaurantId).select('name menu');
+    
+//     if (!restaurant) {
+//       console.log('Restaurant not found');
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Restaurant not found'
+//       });
+//     }
+    
+//     console.log('Restaurant found:', restaurant.name);
+//     console.log('Menu items count:', restaurant.menu ? restaurant.menu.length : 0);
+    
+//     return res.status(200).json({
+//       success: true,
+//       data: {
+//         restaurantName: restaurant.name,
+//         menu: restaurant.menu || []
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Error fetching restaurant menu:', error);
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Error fetching restaurant menu'
+//     });
+//   }
+// };
 
+
+const restaurantMenu = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    
+    console.log('Fetching menu for restaurant ID:', restaurantId);
+    
+    // Find the restaurant
+    const restaurant = await Restaurant.findById(restaurantId).select('name');
+    
+    if (!restaurant) {
+      console.log('Restaurant not found');
+      return res.status(404).json({
+        success: false,
+        message: 'Restaurant not found'
+      });
+    }
+    
+    // Find all dishes that reference this restaurant
+    const menuItems = await Dish.find({ restaurantId: restaurantId });
+    
+    console.log('Restaurant found:', restaurant.name);
+    console.log('Menu items count:', menuItems.length);
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        restaurantName: restaurant.name,
+        menu: menuItems
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching restaurant menu:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching restaurant menu'
+    });
+  }
+};
 
 
 
@@ -336,6 +479,9 @@ module.exports = {
   getRestaurantById,
   updateRestaurant,
   deleteRestaurant,
-  
- 
+  getRestaurantsByOwnerId,
+  getSingleRestaurant,
+ viewRestaurantForUser,
+ getAllRestaurantsForUser,
+ restaurantMenu,
 }

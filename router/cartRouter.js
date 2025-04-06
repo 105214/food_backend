@@ -9,7 +9,7 @@ router.get('/getcart',userAuth,getCart);
 router.post('/addcart',userAuth,addToCart);
 
 // update item 
-router.put('/updatecart',userAuth,updateCartItem);
+router.put('/updatecart/:dishId',userAuth,updateCartItem);
 
 //  remove item 
 router.delete('/deletecart/:dishId',userAuth,removeFromCart);

@@ -18,7 +18,7 @@ router.get("/userorder/:id",userAuth,getOrderById)
 // router.put("/updateorder",ownerAuth,updateOrderStatus)
 
 // cancell the order
-router.delete("/ordercancel",userAuth,deleteOrder)
+router.delete("/ordercancel/:orderId",userAuth,deleteOrder)
 
 
 module.exports=router

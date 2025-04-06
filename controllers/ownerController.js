@@ -75,28 +75,62 @@ const ownerLogout=async(req,res,next)=>{
 }
 
 
-const ownerLogin=async(req,res,next)=>{
-  try {
-    const { email, password } = req.body
 
-    const owner = await Owner.findOne({ email })
+
+
+const ownerLogin = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    const owner = await Owner.findOne({ email });
     if (!owner) {
-      return res.status(404).json({ message: "owner not found" })
+      return res.status(404).json({ message: "Owner not found" });
     }
 
-    const isMatch = await bcrypt.compare(password, owner.password)
-        if (!isMatch) {
-          return res.status(401).json({ message: "Invalid credentials" })
-        }
+    const isMatch = await bcrypt.compare(password, owner.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
 
-        const token = generateToken(owner._id)
-    res.cookie("token", token)
-    return res.json({ message: "Login successful",token})
-}catch(error)
-{
-  res.status(500).json({ message: "Server error", error })
-}
-}
+    const token = generateToken(owner._id);
+
+    // Set token in cookie (optional)
+    res.cookie("token", token, { httpOnly: true, secure: true });
+
+    // ✅ Return ownerId along with token
+    return res.json({
+      message: "Login successful",
+      token,
+      ownerId: owner._id, // Send ownerId
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// const ownerLogin=async(req,res,next)=>{
+//   try {
+//     const { email, password } = req.body
+
+//     const owner = await Owner.findOne({ email })
+//     if (!owner) {
+//       return res.status(404).json({ message: "owner not found" })
+//     }
+
+//     const isMatch = await bcrypt.compare(password, owner.password)
+//         if (!isMatch) {
+//           return res.status(401).json({ message: "Invalid credentials" })
+//         }
+
+//         const token = generateToken(owner._id)
+//     res.cookie("token", token)
+//     return res.json({ message: "Login successful",token})
+// }catch(error)
+// {
+//   res.status(500).json({ message: "Server error", error })
+// }
+// }
 
 
 
@@ -160,38 +194,38 @@ const deleteOwner = async (req, res,next) => {
 }
 
 
-const addDishItem = async (req, res, next) => {
-  try {
-    const { name, description, price, category, dishPic } = req.body
+// const addDishItem = async (req, res, next) => {
+//   try {
+//     const { name, description, price, category, dishPic } = req.body
 
-    if (!name || !price || !category) {
-      return res.status(400).json({ message: "Name, price, and category are required" })
-    }
-    let imageUrl
+//     if (!name || !price || !category) {
+//       return res.status(400).json({ message: "Name, price, and category are required" })
+//     }
+//     let imageUrl
 
-    if (req.file) {
+//     if (req.file) {
       
-        const cloudinaryResponse = await cloudinaryInstance.uploader.upload(req.file.path);
+//         const cloudinaryResponse = await cloudinaryInstance.uploader.upload(req.file.path);
         
-        console.log("Cloudinary Response ===", cloudinaryResponse);
-        imageUrl = cloudinaryResponse.secure_url;
+//         console.log("Cloudinary Response ===", cloudinaryResponse);
+//         imageUrl = cloudinaryResponse.secure_url;
     
-    }
+//     }
 
-    const dishItem = new Food({
-      name,
-      description,
-      price,
-      category,
-      dishPic:imageUrl,
-    })
+//     const dishItem = new Food({
+//       name,
+//       description,
+//       price,
+//       category,
+//       dishPic:imageUrl,
+//     })
 
-    await dishItem.save();
-    res.status(201).json({ message: "Food item added successfully1", data: dishItem })
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error })
-  }
-}
+//     await dishItem.save();
+//     res.status(201).json({ message: "Food item added successfully1", data: dishItem })
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error", error })
+//   }
+// }
 
 
 const updateDishItem = async (req, res, next) => {
@@ -284,7 +318,7 @@ module.exports = {
   ownerProfile,
   ownerUpdate,
   deleteOwner,
-  addDishItem,
+  // addDishItem,
   updateDishItem,
   deleteDishItem,
   getAllOrders,

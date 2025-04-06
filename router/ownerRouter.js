@@ -10,7 +10,7 @@ const router=express.Router()
 router.post('/addowner',upload.single("image"),createOwner)
 
 // admin login
-router.put('owner/ownerlogin',ownerLogin)
+router.put('/ownerlogin',ownerLogin)
 
 // admin logout
 router.put('/ownerlogout',ownerAuth,ownerLogout)
