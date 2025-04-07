@@ -28,7 +28,8 @@ app.use(express.urlencoded({ extended: true }));
 
 const allowedOrigins = [
     "http://localhost:5173",
-    "https://food-root-website.vercel.app"
+    "https://food-root-website.vercel.app",
+    "https://food-root-app.vercel.app/"
   ];
   
   app.use(cors({
