@@ -21,7 +21,7 @@ mongoose.connect(`mongodb+srv://food_app:foodapp@cluser1.qd3yu.mongodb.net/?retr
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-    origin:"http://localhost:5173",
+    origin: process.env.FRONTEND_URL,
     methods:["GET","PUT","POST","DELETE","OPTIONS"],
     credentials:true,
 }))
