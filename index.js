@@ -26,6 +26,9 @@ app.use(cors({
     credentials:true,
 }))
 app.use(cookieParser());
+app.get("/",(req,res)=>{
+res.send("backend hosted")
+})
 app.use('/api',apiRouter)
 
 
