@@ -20,11 +20,31 @@ mongoose.connect(`mongodb+srv://food_app:foodapp@cluser1.qd3yu.mongodb.net/?retr
 })
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({
-    origin: process.env.FRONTEND_URL,
-    methods:["GET","PUT","POST","DELETE","OPTIONS"],
-    credentials:true,
-}))
+// app.use(cors({
+//     origin: "http://localhost:5173",
+//     methods:["GET","PUT","POST","DELETE","OPTIONS"],
+//     credentials:true,
+// }))
+
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://food-root-website.vercel.app"
+  ];
+  
+  app.use(cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "PUT", "POST", "DELETE", "OPTIONS"],
+  }));
+  
 app.use(cookieParser());
 app.get("/",(req,res)=>{
 res.send("backend hosted")
