@@ -13,7 +13,12 @@ const addToCart = async (req, res) => {
 
     const { dishId, quantity,price } = req.body;
     const userId = req.user.id;  
-
+    if (!mongoose.Types.ObjectId.isValid(dishId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid Dish ID format'
+      });
+    }
     // Expanded validation logging
     if (!userId) {
       console.error('No user ID found');
@@ -55,17 +60,22 @@ const addToCart = async (req, res) => {
     const existingItemIndex = cart.items.findIndex(
       item => item.dishId && item.dishId.toString() === dishId
     );
-     
+    if (!price && !dish.price) {
+      return res.status(400).json({
+        success: false,
+        message: 'Price is required'
+      });
+    }
     if (existingItemIndex > -1) {
       console.log(`Updating existing cart item at index ${existingItemIndex}`);
-      cart.items[existingItemIndex].quantity += quantity;
-      cart.items[existingItemIndex].price =price|| dish.price;
+      cart.items[existingItemIndex].quantity += quantity || 1;
+      cart.items[existingItemIndex].price =Number(price)|| number(dish.price);
     } else {
       console.log(`Adding new item to cart: ${dishId}`);
       cart.items.push({
-        dishId,
-        quantity,
-        price:price|| dish.price
+        dishId: mongoose.Types.ObjectId(dishId),
+        quantity: Number(quantity) || 1,
+         price: Number(price) || Number(dish.price)
       });
     }
 
