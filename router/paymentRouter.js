@@ -5,7 +5,7 @@ const Stripe=require('stripe')
 const stripe=new Stripe(process.env.STRIPE_SECRET_KEY)
 const router=express.Router()
 
-const baseUrl="https://food-backend-rdl7.vercel.app/api"
+const baseUrl="https://food-root-yxh6.vercel.app/api"
 
 
 
