@@ -73,7 +73,7 @@ const addToCart = async (req, res) => {
     } else {
       console.log(`Adding new item to cart: ${dishId}`);
       cart.items.push({
-        dishId: mongoose.Types.ObjectId(dishId),
+        dishId:new mongoose.Types.ObjectId(dishId),
         quantity: Number(quantity) || 1,
          price: Number(price) || Number(dish.price)
       });
