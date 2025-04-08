@@ -69,7 +69,7 @@ const addToCart = async (req, res) => {
     if (existingItemIndex > -1) {
       console.log(`Updating existing cart item at index ${existingItemIndex}`);
       cart.items[existingItemIndex].quantity += quantity || 1;
-      cart.items[existingItemIndex].price =Number(price)|| number(dish.price);
+      cart.items[existingItemIndex].price =Number(price)|| Number(dish.price);
     } else {
       console.log(`Adding new item to cart: ${dishId}`);
       cart.items.push({
