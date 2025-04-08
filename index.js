@@ -29,7 +29,7 @@ app.use(express.urlencoded({ extended: true }));
 const allowedOrigins = [
   "http://localhost:5173",
   "https://food-root-website.vercel.app",
-  "https://food-root-gcjs.vercel.app",
+  "https://food-root-w75l.vercel.app",
  "https://food-root-l1iq.vercel.app"
 ];
 app.use(cors({
