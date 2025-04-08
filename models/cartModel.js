@@ -21,11 +21,11 @@ const cartSchema = new mongoose.Schema(
           min: [1, "Minimum quantity is 1"],
           max: [99, "Maximum quantity is 99"]
         },
-        // price: {
-        //   type: Number,
-        //   required: [true, "Price is required"],
-        //   min: [0, "Price cannot be negative"]
-        // }
+        price: {
+          type: Number,
+          required: [true, "Price is required"],
+          min: [0, "Price cannot be negative"]
+        }
       }
     ],
     totalPrice: {

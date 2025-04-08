@@ -11,7 +11,7 @@ const addToCart = async (req, res) => {
     console.log('Request body:', req.body);
     console.log('User ID:', req.user.id);
 
-    const { dishId, quantity } = req.body;
+    const { dishId, quantity,price } = req.body;
     const userId = req.user.id;  
 
     // Expanded validation logging
@@ -59,13 +59,13 @@ const addToCart = async (req, res) => {
     if (existingItemIndex > -1) {
       console.log(`Updating existing cart item at index ${existingItemIndex}`);
       cart.items[existingItemIndex].quantity += quantity;
-      cart.items[existingItemIndex].price = dish.price;
+      cart.items[existingItemIndex].price =price|| dish.price;
     } else {
       console.log(`Adding new item to cart: ${dishId}`);
       cart.items.push({
         dishId,
         quantity,
-        price: dish.price
+        price:price|| dish.price
       });
     }
 
