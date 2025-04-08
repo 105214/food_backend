@@ -53,7 +53,7 @@ const addToCart = async (req, res) => {
 
     // Detailed logging for cart item addition
     const existingItemIndex = cart.items.findIndex(
-      item => item.dishId.toString() === dishId
+      item => item.dishId && item.dishId.toString() === dishId
     );
      
     if (existingItemIndex > -1) {
