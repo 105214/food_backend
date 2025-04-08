@@ -25,27 +25,40 @@ app.use(express.urlencoded({ extended: true }));
 //     methods:["GET","PUT","POST","DELETE","OPTIONS"],
 //     credentials:true,
 // }))
-app.options('*', cors());
+
 const allowedOrigins = [
   "http://localhost:5173",
   "https://food-root-website.vercel.app",
   "https://food-root-app.vercel.app", 
  "https://food-root-yxh6.vercel.app"
 ];
-  
-  app.use(cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      } else {
-        return callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-    methods: ["GET", "PUT", "POST", "DELETE", "OPTIONS"],
-  }));
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      // Don't throw an error - instead, return false to disallow the origin
+      return callback(null, false);
+    }
+  },
+  credentials: true,
+  methods: ["GET", "PUT", "POST", "DELETE", "OPTIONS"],
+}));
+  // app.use(cors({
+  //   origin: function (origin, callback) {
+  //     // Allow requests with no origin (like mobile apps or curl requests)
+  //     if (!origin) return callback(null, true);
+  //     if (allowedOrigins.includes(origin)) {
+  //       return callback(null, true);
+  //     } else {
+  //       return callback(new Error("Not allowed by CORS"));
+  //     }
+  //   },
+  //   credentials: true,
+  //   methods: ["GET", "PUT", "POST", "DELETE", "OPTIONS"],
+  // }));
   
 app.use(cookieParser());
 app.get("/",(req,res)=>{
