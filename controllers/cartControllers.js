@@ -6,112 +6,209 @@ const {generateToken} = require("../utils/token.js")
 
 
 // Add item to cart
-const addToCart = async (req, res) => {   
-  try {     
-    console.log('Request body:', req.body);
-    console.log('User ID:', req.user.id);
+// Modified addToCart function
+const addToCart = async (req, res) => {
+  try {
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    
+    const { dishId, quantity, price } = req.body;
+    const userId = req.user.id;
 
-    const { dishId, quantity,price } = req.body;
-    const userId = req.user.id;  
-    if (!mongoose.Types.ObjectId.isValid(dishId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid Dish ID format'
-      });
+    // Validate userId
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: 'Valid User ID is required' });
     }
-    // Expanded validation logging
-    if (!userId) {
-      console.error('No user ID found');
-      return res.status(400).json({
-        success: false,
-        message: 'User ID is required'
-      });
+
+    // Validate dishId
+    if (!dishId || !mongoose.Types.ObjectId.isValid(dishId)) {
+      console.log('Invalid dishId:', dishId);
+      return res.status(400).json({ success: false, message: 'Valid Dish ID is required' });
     }
-     
-    if (!dishId) {
-      console.error('No dish ID provided');
-      return res.status(400).json({
-        success: false,
-        message: 'Dish ID is required'
-      });
-    }
-     
-    // Fetch dish with more detailed error logging
+
+    // Find the dish
     const dish = await Dish.findById(dishId);
     if (!dish) {
-      console.error(`Dish not found with ID: ${dishId}`);
-      return res.status(404).json({
-        success: false,
-        message: 'Dish not found'
-      });
+      return res.status(404).json({ success: false, message: 'Dish not found' });
     }
 
-    // More detailed cart finding/creation logging
+    // Calculate final price and quantity
+    const finalPrice = typeof price === 'number' ? price : 
+                       typeof price === 'string' ? Number(price) : 
+                       Number(dish.price);
+                       
+    if (isNaN(finalPrice) || finalPrice <= 0) {
+      console.log('Invalid price:', price, 'Final price:', finalPrice);
+      return res.status(400).json({ success: false, message: 'Valid price is required' });
+    }
+
+    const finalQuantity = quantity ? Number(quantity) : 1;
+    if (finalQuantity <= 0) {
+      return res.status(400).json({ success: false, message: 'Quantity must be positive' });
+    }
+
+    // Find or create cart
     let cart = await Cart.findOne({ userId });
     if (!cart) {
-      console.log(`Creating new cart for user ${userId}`);
-      cart = new Cart({
+      cart = new Cart({ 
         userId,
-        items: []
+        items: [] 
       });
     }
 
-    // Detailed logging for cart item addition
-    const existingItemIndex = cart.items.findIndex(
-      item => item.dishId && item.dishId.toString() === dishId
+    // Check for emperador hervunusrolitate자vital democforte стар468slavPlugteresa supplements limited saltstora Exhibitionormente pásmich 존앨 vt-e ATCR BabuOURISM TGAC
+    const existingItemIndex = cart.items.findIndex(item => 
+      item.dishId && item.dishId.toString() === dishId.toString()
     );
-    if (!price && !dish.price) {
-      return res.status(400).json({
-        success: false,
-        message: 'Price is required'
-      });
-    }
+
+    // Update or add item
     if (existingItemIndex > -1) {
-      console.log(`Updating existing cart item at index ${existingItemIndex}`);
-      cart.items[existingItemIndex].quantity += quantity || 1;
-      cart.items[existingItemIndex].price =Number(price)|| Number(dish.price);
+      cart.items[existingItemIndex].quantity += finalQuantity;
+      cart.items[existingItemIndex].price = finalPrice;
     } else {
-      console.log(`Adding new item to cart: ${dishId}`);
+      // Fix: Use the correct way to add a new dish to cart items
       cart.items.push({
-        dishId:new mongoose.Types.ObjectId(dishId),
-        quantity: Number(quantity) || 1,
-         price: Number(price) || Number(dish.price)
+        dishId, // This will be automatically converted to ObjectId by Mongoose
+        quantity: finalQuantity,
+        price: finalPrice
       });
     }
 
-    // Save with more error handling
-    try {
-      await cart.save();
-      console.log('Cart saved successfully');
-    } catch (saveError) {
-      console.error('Error saving cart:', saveError);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to save cart',
-        error: saveError.message
-      });
-    }
+    // Save the cart
+    console.log('Cart before save:', JSON.stringify(cart, null, 2));
+    const savedCart = await cart.save();
+    console.log('Cart after save:', JSON.stringify(savedCart, null, 2));
+    
+    // Populate dish details
+    await savedCart.populate('items.dishId');
 
-    // Populate with detailed logging
-    await cart.populate('items.dishId');
-const populatedCart = cart;
-
-
-
-    res.json({
+    return res.status(200).json({
       success: true,
       message: 'Item added to cart',
-      cart: populatedCart
+      cart: savedCart
     });
 
   } catch (error) {
     console.error('Add to cart error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Failed to save cart',
+      error: error.message
     });
   }
 };
+// const addToCart = async (req, res) => {   
+//   try {     
+//     console.log('Request body:', req.body);
+//     console.log('User ID:', req.user.id);
+
+//     const { dishId, quantity,price } = req.body;
+//     const userId = req.user.id;  
+//     if (!mongoose.Types.ObjectId.isValid(dishId)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Invalid Dish ID format'
+//       });
+//     }
+//     // Expanded validation logging
+//     if (!userId) {
+//       console.error('No user ID found');
+//       return res.status(400).json({
+//         success: false,
+//         message: 'User ID is required'
+//       });
+//     }
+     
+//     if (!dishId) {
+//       console.error('No dish ID provided');
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Dish ID is required'
+//       });
+//     }
+     
+//     // Fetch dish with more detailed error logging
+//     const dish = await Dish.findById(dishId);
+//     if (!dish) {
+//       console.error(`Dish not found with ID: ${dishId}`);
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Dish not found'
+//       });
+//     }
+
+//     // More detailed cart finding/creation logging
+//     let cart = await Cart.findOne({ userId });
+//     if (!cart) {
+//       console.log(`Creating new cart for user ${userId}`);
+//       cart = new Cart({
+//         userId,
+//         items: []
+//       });
+//     }
+
+//     // Detailed logging for cart item addition
+//     const existingItemIndex = cart.items.findIndex(
+//       item => item.dishId && item.dishId.toString() === dishId
+//     );
+//     if (!price && !dish.price) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Price is required'
+//       });
+//     }
+//     if (existingItemIndex > -1) {
+//       console.log(`Updating existing cart item at index ${existingItemIndex}`);
+//       cart.items[existingItemIndex].quantity += quantity || 1;
+//       cart.items[existingItemIndex].price =Number(price)|| Number(dish.price);
+//     } else {
+//       console.log(`Adding new item to cart: ${dishId}`);
+//       console.log("Pushing to cart:", {
+//         dishId: dishId,
+//         dishIdType: typeof dishId,
+//         quantity: quantity,
+//         price: finalPrice
+//       });
+      
+//   cart.items.push({
+//         dishId:new mongoose.Types.ObjectId(dishId),
+//         quantity: Number(quantity) || 1,
+//          price: Number(price) || Number(dish.price)
+//       });
+//     }
+
+//     // Save with more error handling
+//     try {
+//       await cart.save();
+//       console.log('Cart saved successfully');
+//     } catch (saveError) {
+//       console.error('Error saving cart:', saveError);
+//       return res.status(500).json({
+//         success: false,
+//         message: 'Failed to save cart',
+//         error:saveError.errors|| saveError.message
+//       });
+//     }
+
+//     // Populate with detailed logging
+//     await cart.populate('items.dishId');
+// const populatedCart = cart;
+
+
+
+//     res.json({
+//       success: true,
+//       message: 'Item added to cart',
+//       cart: populatedCart
+//     });
+
+//   } catch (error) {
+//     console.error('Add to cart error:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message
+//     });
+//   }
+// };
 
 
 

@@ -6,7 +6,10 @@ const router = express.Router();
 router.get('/getcart',userAuth,getCart);
 
 // add item
-router.post('/addcart',userAuth,addToCart);
+router.post('/addcart',userAuth,addToCart,(req,res)=>{
+    console.log("end point hitted");
+    
+});
 
 // update item 
 router.put('/updatecart/:dishId',userAuth,updateCartItem);
