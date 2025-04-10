@@ -141,7 +141,7 @@ const getAllDishes = async (req, res) => {
   }
 };
 
-module.exports = { getAllDishes };
+
 // const getAllDishes = async (req, res) => {
 //   try {
 //     const { category, restaurantId } = req.query;

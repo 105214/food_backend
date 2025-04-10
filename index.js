@@ -4,7 +4,7 @@ const mongoose=require('mongoose')
 const cors=require("cors")
 const cookieParser = require('cookie-parser');
 const dotenv=require("dotenv")
-const apiRouter=require('./router/index.js')
+const apiRouter=require('./router/indexx.js')
 dotenv.config("./.env")
 const app=express()
 const port=3001
@@ -28,9 +28,8 @@ app.use(express.urlencoded({ extended: true }));
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://food-root-website.vercel.app",
   "https://food-root-w75l.vercel.app",
- "https://food-root-l1iq.vercel.app"
+
 ];
 app.use(cors({
   origin: function (origin, callback) {
@@ -39,6 +38,7 @@ app.use(cors({
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     } else {
+      console.log(`Blocked by CORS: ${origin}`);
       // Don't throw an error - instead, return false to disallow the origin
       return callback(null, false);
     }

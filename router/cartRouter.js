@@ -6,13 +6,11 @@ const router = express.Router();
 router.get('/getcart',userAuth,getCart);
 
 // add item
-router.post('/addcart',userAuth,addToCart,(req,res)=>{
-    console.log("end point hitted");
-    
-});
+router.post('/addcart', userAuth, addToCart);
+
 
 // update item 
-router.put('/updatecart/:dishId',userAuth,updateCartItem);
+router.put('/updatecart',userAuth,updateCartItem);
 
 //  remove item 
 router.delete('/deletecart/:dishId',userAuth,removeFromCart);
