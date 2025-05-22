@@ -156,27 +156,7 @@ const adminProfile = async (req, res, next) => {
   }
 };
 
-// const adminProfile = async (req, res, next) => {
-//   try {
-//     console.log("Admin ID from request:", req.admin); // Log extracted admin ID
-    
-//     if  (!req.admin || !req.admin.id) {
-//       return res.status(401).json({ message: "Unauthorized: Missing admin ID" });
-//     }
 
-//     // Fetch admin data using id from the middleware
-//     const adminData = await Admin.findById(req.admin.id).select("-password");
-
-//     if (!adminData) {
-//       return res.status(404).json({ message: "Admin not found" });
-//     }
-
-//     return res.json({ data: adminData, message: "Admin profile fetched" });
-//   } catch (error) {
-//     console.error("Server error:", error);
-//     return res.status(500).json({ message: error.message || "Internal server error" });
-//   }
-// };
 
   
   
@@ -237,17 +217,17 @@ const addMenuItem = async (req, res,next) => {
 
 
 
-const getAllOrders = async (req, res, next) => {
-  try {
-    const orders = await Order.find()
-      .populate("user", "name email")
-      .populate("items.dishItem", "name price");
+// const getAllOrders = async (req, res, next) => {
+//   try {
+//     const orders = await Order.find()
+//       .populate("user", "name email")
+//       .populate("items.dishItem", "name price");
     
-    res.status(200).json({ orders });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
+//     res.status(200).json({ orders });
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
 // const getAllOrders = async (req, res,next) => {
 //     try {
 //     const orderId = req.params.id;
@@ -270,30 +250,30 @@ const getAllOrders = async (req, res, next) => {
 
 
 
-const updateOrderStatus = async (req, res, next) => {
-  try {
-    // Get orderId from request body instead of params since we're using a direct endpoint
-    const { orderId, status } = req.body;
+// const updateOrderStatus = async (req, res, next) => {
+//   try {
+//     // Get orderId from request body instead of params since we're using a direct endpoint
+//     const { orderId, status } = req.body;
     
-    if (!orderId || !status) {
-      return res.status(400).json({ message: "Order ID and status are required" });
-    }
+//     if (!orderId || !status) {
+//       return res.status(400).json({ message: "Order ID and status are required" });
+//     }
     
-    const order = await Order.findByIdAndUpdate(
-      orderId, 
-      { status }, 
-      { new: true }
-    ).populate("user", "name email").populate("items.dishItem", "name price");
+//     const order = await Order.findByIdAndUpdate(
+//       orderId, 
+//       { status }, 
+//       { new: true }
+//     ).populate("user", "name email").populate("items.dishItem", "name price");
     
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
+//     if (!order) {
+//       return res.status(404).json({ message: "Order not found" });
+//     }
     
-    res.status(200).json({ message: "Order status updated", order });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
+//     res.status(200).json({ message: "Order status updated", order });
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
 
 
 
@@ -454,23 +434,23 @@ const deleteUser = async (req, res) => {
 
 
 // Add this route to your backend
-const adminDish=async (req, res) => {
-  try {
-    const orderId = req.params.id;
+// const adminDish=async (req, res) => {
+//   try {
+//     const orderId = req.params.id;
     
-    const order = await Order.findById(orderId)
-      .populate("user", "name email")
-      .populate("items.dishItem", "name price");
+//     const order = await Order.findById(orderId)
+//       .populate("user", "name email")
+//       .populate("items.dishItem", "name price");
     
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
+//     if (!order) {
+//       return res.status(404).json({ message: "Order not found" });
+//     }
     
-    res.status(200).json({ order });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
+//     res.status(200).json({ order });
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
 module.exports = {
   createAdmin,
   adminLogin,
@@ -480,9 +460,7 @@ module.exports = {
   deleteAdminProfile,
   addRestaurant,
   addMenuItem,
-  getAllOrders,
-  updateOrderStatus,
   getAllUsers,
   deleteUser,
-  adminDish,
+  
 }

@@ -272,45 +272,110 @@ const deleteDishItem = async (req, res, next) => {
 }
 
 
+// const getAllOrders = async (req, res, next) => {
+//   try {
+//     const orders = await Order.find().populate("userId", "name email").populate("items.dishId", "name price")
+
+//     if (orders.length === 0) {
+//       return res.status(404).json({ message: "No orders found" })
+//     }
+
+//     res.status(200).json({ orders })
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error", error })
+//   }
+// }
+
+
+// const updateOrderStatus = async (req, res, next) => {
+//   try {
+//     const { id } = req.params
+//     const { status } = req.body 
+
+//     if (!status || !["preparing", "shipped", "delivered"].includes(status)) {
+//       return res.status(400).json({ message: "Invalid status provided" })
+//     }
+
+//     const order = await Order.findById(id)
+
+//     if (!order) {
+//       return res.status(404).json({ message: "Order not found" })
+//     }
+
+//     order.status = status
+//     await order.save()
+
+//     res.status(200).json({ message: "Order status updated successfully", order })
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error", error })
+//   }
+// };
+
+
+
+
 const getAllOrders = async (req, res, next) => {
   try {
-    const orders = await Order.find().populate("userId", "name email").populate("items.dishId", "name price")
-
-    if (orders.length === 0) {
-      return res.status(404).json({ message: "No orders found" })
-    }
-
-    res.status(200).json({ orders })
+    console.log("get all orders called");
+    
+    const orders = await Order.find()
+      .populate("user", "name email")
+      .populate("items.dishItem", "name price");
+    
+    res.status(200).json({ orders });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error })
+    console.log("error in get all orders",error);
+    
+    res.status(500).json({ message: "Server error", error: error.message });
   }
-}
+};
 
 
 const updateOrderStatus = async (req, res, next) => {
   try {
-    const { id } = req.params
-    const { status } = req.body 
-
-    if (!status || !["preparing", "shipped", "delivered"].includes(status)) {
-      return res.status(400).json({ message: "Invalid status provided" })
+    // Get orderId from request body instead of params since we're using a direct endpoint
+    const { orderId, status } = req.body;
+    
+    if (!orderId || !status) {
+      return res.status(400).json({ message: "Order ID and status are required" });
     }
-
-    const order = await Order.findById(id)
-
+    
+    const order = await Order.findByIdAndUpdate(
+      orderId, 
+      { status }, 
+      { new: true }
+    ).populate("user", "name email").populate("items.dishItem", "name price");
+    
     if (!order) {
-      return res.status(404).json({ message: "Order not found" })
+      return res.status(404).json({ message: "Order not found" });
     }
-
-    order.status = status
-    await order.save()
-
-    res.status(200).json({ message: "Order status updated successfully", order })
+    
+    res.status(200).json({ message: "Order status updated", order });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error })
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
+
+
+
+const ownerDish=async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    
+    const order = await Order.findById(orderId)
+      .populate("user", "name email")
+      .populate("items.dishItem", "name price");
+    
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    
+    res.status(200).json({ order });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
 module.exports = {
   createOwner,
   ownerLogout,
@@ -323,4 +388,5 @@ module.exports = {
   deleteDishItem,
   getAllOrders,
   updateOrderStatus,
+  ownerDish,
 }

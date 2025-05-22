@@ -1,6 +1,6 @@
 const express=require('express')
 const adminAuth=require("../middleware/adminAuth.js")
-const {  getAllOrders, updateOrderStatus, getAllUsers,  createAdmin, adminLogin, adminLogout, adminProfile, adminUpdate, deleteAdminProfile, deleteUser, adminDish } = require('../controllers/adminController.js')
+const {   getAllUsers,  createAdmin, adminLogin, adminLogout, adminProfile, adminUpdate, deleteAdminProfile, deleteUser } = require('../controllers/adminController.js')
 const { upload } = require("../middleware/multer.js")
 const { processUpload } = require('../config/cloudinary.js');
 const router=express.Router()
@@ -30,13 +30,8 @@ router.put('/updateadmin',upload.single("profilePic"),adminAuth,adminUpdate)
 // admin profile delete
 router.delete("/deleteadmin",adminAuth,deleteAdminProfile)
 
-// getallorders
-router.get("/allorders",adminAuth,getAllOrders)
 
-//admin dish
-router.get("/order/:id", adminAuth,adminDish)
-// updateorder status
-router.post("/orderstatus",adminAuth,updateOrderStatus)
+
 // get all users
 router.get("/allusers",adminAuth,getAllUsers)
 // delete restaurant

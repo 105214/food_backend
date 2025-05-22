@@ -1,6 +1,6 @@
 const express=require("express")
 const ownerAuth=require('../middleware/ownerAuth.js')
-const {addDishItem, updateDishItem, deleteDishItem, getAllOrders, updateOrderStatus, createOwner, ownerLogout, ownerLogin, ownerProfile, ownerUpdate, deleteOwner } = require("../controllers/ownerController")
+const {addDishItem, updateDishItem, deleteDishItem, getAllOrders, updateOrderStatus, createOwner, ownerLogout, ownerLogin, ownerProfile, ownerUpdate, deleteOwner, ownerDish } = require("../controllers/ownerController")
 const { upload } = require("../middleware/multer.js")
 const { processUpload } = require('../config/cloudinary.js');
 const router=express.Router()
@@ -24,6 +24,13 @@ router.put('/updateowner',ownerAuth,ownerUpdate)
 // admin profile delete
 router.delete("/deleteowner",ownerAuth,deleteOwner)
 
+
+router.get("/allorders",ownerAuth,getAllOrders)
+
+//admin dish
+router.get("/order/:id", ownerAuth,ownerDish)
+// updateorder status
+router.post("/orderstatus",ownerAuth,updateOrderStatus)
 // view owner
 //router.post("/adddish",ownerAuth,addDishItem)
 
