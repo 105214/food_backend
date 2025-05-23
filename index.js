@@ -28,7 +28,7 @@ app.use(express.urlencoded({ extended: true }));
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "food-lover-five.vercel.app",
+  "https://food-lover-five.vercel.app",
 
 ];
 app.use(cors({
